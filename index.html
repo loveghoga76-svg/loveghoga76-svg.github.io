@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeCraft Labs — Websites Built in Three Dimensions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --void:#0a0a12;
+    --panel:#15152a;
+    --violet:#7c5cff;
+    --cyan:#4ce0d2;
+    --coral:#ff6b5b;
+    --ink:#eeeef7;
+    --ink-dim:#9a9ab0;
+    --line:rgba(238,238,247,0.1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--void); color:var(--ink); font-family:'Inter', sans-serif; overflow-x:hidden; position:relative;}
+  ::selection{background:var(--violet); color:var(--void);}
+  a{color:inherit;}
+  .display{font-family:'Sora', sans-serif;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  #bgcanvas{position:fixed; inset:0; z-index:0; opacity:0.35;}
+
+  .wrap{max-width:1180px; margin:0 auto; padding:0 32px; position:relative; z-index:2;}
+
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 32px;
+    backdrop-filter:blur(10px);
+    background:linear-gradient(to bottom, rgba(10,10,18,0.85), transparent);
+  }
+  .logo{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.02em;}
+  .logo-mark{width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg, var(--violet), var(--cyan)); transform:rotate(45deg); box-shadow:0 0 20px rgba(124,92,255,0.6);}
+  .nav-cta{font-size:13px; font-weight:600; padding:10px 18px; border:1px solid var(--line); border-radius:999px; text-decoration:none; transition:all .25s ease;}
+  .nav-cta:hover{border-color:var(--violet); box-shadow:0 0 0 3px rgba(124,92,255,0.15);}
+
+  /* HERO */
+  .hero{
+    min-height:100svh;
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:140px 32px 60px;
+    overflow:hidden;
+  }
+  #hero3d{position:absolute; inset:0; z-index:0;}
+  #hero3d canvas{display:block; width:100% !important; height:100% !important;}
+  .hero-content{position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;}
+
+  .eyebrow{font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.15em; color:var(--cyan); text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:10px; justify-content:center;}
+  .eyebrow::before, .eyebrow::after{content:''; width:24px; height:1px; background:var(--cyan); opacity:0.5;}
+
+  h1{font-size:clamp(40px, 7vw, 84px); line-height:1.02; font-weight:800; letter-spacing:-0.02em; max-width:900px;}
+  h1 .accent{background:linear-gradient(100deg, var(--violet), var(--cyan) 60%, var(--coral)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero-content p{margin-top:22px; font-size:18px; color:var(--ink-dim); max-width:520px; line-height:1.6;}
+
+  .hero-ctas{display:flex; gap:14px; margin-top:38px; flex-wrap:wrap; justify-content:center;}
+  .btn-primary{background:var(--ink); color:var(--void); font-weight:700; font-size:15px; padding:16px 28px; border-radius:12px; text-decoration:none; box-shadow:0 8px 30px rgba(124,92,255,0.25); transition:transform .25s ease, box-shadow .25s ease; display:inline-flex; align-items:center; gap:8px;}
+  .btn-primary:hover{transform:translateY(-3px); box-shadow:0 14px 40px rgba(124,92,255,0.4);}
+  .btn-secondary{border:1px solid var(--line); color:var(--ink); font-weight:600; font-size:15px; padding:16px 26px; border-radius:12px; text-decoration:none; transition:border-color .25s ease;}
+  .btn-secondary:hover{border-color:var(--ink-dim);}
+
+  .scroll-hint{margin-top:56px; font-size:12px; color:var(--ink-dim); font-family:'JetBrains Mono',monospace; letter-spacing:0.1em; position:relative; z-index:2;}
+
+  /* SECTIONS */
+  section{padding:110px 0; position:relative;}
+  .section-head{max-width:600px; margin-bottom:56px;}
+  .section-tag{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--coral); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; display:block;}
+  .section-head h2{font-size:clamp(28px,4vw,42px); font-weight:800; letter-spacing:-0.01em; line-height:1.1;}
+  .section-head p{color:var(--ink-dim); margin-top:14px; font-size:16px; line-height:1.6;}
+
+  .grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:26px;}
+  .tile{perspective:1200px;}
+  .tile-inner{
+    border-radius:16px; border:1px solid var(--line); background:var(--panel); padding:22px;
+    transform-style:preserve-3d; transition:transform .08s ease-out, box-shadow .2s ease, border-color .3s ease;
+    height:100%; display:flex; flex-direction:column;
+  }
+  .tile:hover .tile-inner{border-color:rgba(238,238,247,0.28);}
+  .mockup{height:140px; border-radius:10px; margin-bottom:18px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.08); transform:translateZ(46px);}
+  .mockup .mbar{height:20px; background:rgba(255,255,255,0.08); display:flex; align-items:center; gap:4px; padding:0 8px;}
+  .mockup .mdot{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.3);}
+  .mockup .mbody{height:calc(100% - 20px);}
+
+  .m-neon{background:#0c0a18;} .m-neon .mbody{background:
+      linear-gradient(90deg, transparent 49%, rgba(124,92,255,0.5) 50%, transparent 51%),
+      linear-gradient(0deg, transparent 49%, rgba(76,224,210,0.35) 50%, transparent 51%),
+      radial-gradient(circle at 70% 30%, rgba(255,107,91,0.4), transparent 55%);}
+  .m-swiss{background:#f3f1ea;} .m-swiss .mbody{background:repeating-linear-gradient(180deg,#0a0a12 0 2px, transparent 2px 22px); margin:14px; opacity:0.85; height:calc(100% - 28px);}
+  .m-glass{background:linear-gradient(160deg,#1c2740,#0f1830);} .m-glass .mbody{background:
+      radial-gradient(circle at 30% 40%, rgba(255,255,255,0.18), transparent 45%),
+      radial-gradient(circle at 70% 70%, rgba(76,224,210,0.25), transparent 45%);}
+  .m-brutal{background:#eeeef7;} .m-brutal .mbody{background:
+      repeating-linear-gradient(90deg,#0a0a12 0 30px, transparent 30px 34px),
+      linear-gradient(#0a0a12,#0a0a12); background-size:100% 100%, 100% 40%; background-position:0 0, 0 100%; background-repeat:no-repeat;}
+  .m-editorial{background:#141220;} .m-editorial .mbody{display:flex; align-items:center; justify-content:center;}
+  .m-editorial .mbody::after{content:'Aa'; font-family:'Sora',serif; font-size:52px; font-weight:800; color:rgba(238,238,247,0.85);}
+  .m-shop{background:#101014;} .m-shop .mbody{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:10px;}
+  .m-shop .mbody div{background:rgba(255,107,91,0.25); border-radius:4px;}
+
+  .tile h3{font-size:17px; font-weight:700; transform:translateZ(46px);}
+  .tile .tag{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--cyan); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; transform:translateZ(46px); display:block;}
+  .tile p{font-size:14px; color:var(--ink-dim); margin-top:8px; line-height:1.55; transform:translateZ(46px);}
+
+  .process{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+  .step{border-top:1px solid var(--line); padding-top:20px;}
+  .step .num{font-family:'JetBrains Mono', monospace; color:var(--violet); font-size:14px;}
+  .step h4{font-size:18px; font-weight:700; margin-top:10px;}
+  .step p{color:var(--ink-dim); font-size:14px; margin-top:8px; line-height:1.5;}
+
+  .cta-panel{
+    border-radius:24px; background:#0d0d1c; border:1px solid var(--line);
+    padding:80px 48px; text-align:center; position:relative; overflow:hidden; min-height:380px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  #ctacanvas{position:absolute; inset:0; z-index:0;}
+  #ctacanvas canvas{display:block; width:100% !important; height:100% !important;}
+  .cta-inner{position:relative; z-index:2;}
+  .cta-panel h2{font-size:clamp(28px,4vw,44px); font-weight:800;}
+  .handle{font-family:'JetBrains Mono', monospace; font-size:20px; color:var(--cyan); margin-top:16px; display:inline-block;}
+  .cta-panel p.sub{color:var(--ink-dim); margin-top:14px; max-width:460px; margin-left:auto; margin-right:auto;}
+  .cta-panel .btn-primary{margin-top:30px;}
+
+  footer{padding:50px 32px; text-align:center; color:var(--ink-dim); font-size:13px; position:relative; z-index:2;}
+  footer .handle-small{color:var(--cyan); font-family:'JetBrains Mono', monospace;}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+    .process{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:640px){
+    .grid{grid-template-columns:1fr;}
+    .process{grid-template-columns:1fr;}
+  }
+
+  a:focus-visible, button:focus-visible{outline:2px solid var(--cyan); outline-offset:3px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgcanvas"></canvas>
+
+<nav>
+  <div class="logo"><span class="logo-mark"></span><span>CodeCraft Labs</span></div>
+  <a class="nav-cta" href="https://instagram.com/codecraft.labs" target="_blank" rel="noopener">DM on Instagram</a>
+</nav>
+
+<header class="hero">
+  <div id="hero3d"></div>
+  <div class="hero-content">
+    <span class="eyebrow">Web design studio</span>
+    <h1 class="display">Your website,<br>built in <span class="accent">three dimensions</span>.</h1>
+    <p>CodeCraft Labs designs websites that move, tilt, and respond — no flat pages, no templates. Every project is built fully 3D, from the hero to the last pixel.</p>
+    <div class="hero-ctas">
+      <a class="btn-primary" href="https://instagram.com/codecraft.labs" target="_blank" rel="noopener">DM @codecraft.labs →</a>
+      <a class="btn-secondary" href="#showcase">See the styles</a>
+    </div>
+    <div class="scroll-hint">MOVE YOUR CURSOR ↴</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="showcase">
+    <div class="section-head">
+      <span class="section-tag">Showcase</span>
+      <h2 class="display">Pick your dimension.</h2>
+      <p>Six directions we build in — each one fully three-dimensional, tilting and reacting as you move. DM your favorite and we'll shape it around your brand.</p>
+    </div>
+
+    <div class="grid" id="tileGrid">
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-neon"><div class="mbar"><span class="mdot"></span><span class="mdot"></span><span class="mdot"></span></div><div class="mbody"></div></div>
+        <span class="tag">Style 01</span>
+        <h3>Neon Drift</h3>
+        <p>Cyberpunk glow, layered depth, motion that never sits still. For brands that want energy.</p>
+      </div></div>
+
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-swiss"><div class="mbar" style="background:rgba(0,0,0,0.06);"><span class="mdot" style="background:rgba(0,0,0,0.25);"></span><span class="mdot" style="background:rgba(0,0,0,0.25);"></span><span class="mdot" style="background:rgba(0,0,0,0.25);"></span></div><div class="mbody"></div></div>
+        <span class="tag">Style 02</span>
+        <h3>Swiss Grid</h3>
+        <p>Confident whitespace, precise type, subtle tilt on scroll. For studios and portfolios.</p>
+      </div></div>
+
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-glass"><div class="mbar"><span class="mdot"></span><span class="mdot"></span><span class="mdot"></span></div><div class="mbody"></div></div>
+        <span class="tag">Style 03</span>
+        <h3>Glass Depth</h3>
+        <p>Frosted layers stacked in space, soft light passing through. For product launches.</p>
+      </div></div>
+
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-brutal"><div class="mbar" style="background:rgba(0,0,0,0.06);"><span class="mdot" style="background:rgba(0,0,0,0.25);"></span><span class="mdot" style="background:rgba(0,0,0,0.25);"></span><span class="mdot" style="background:rgba(0,0,0,0.25);"></span></div><div class="mbody"></div></div>
+        <span class="tag">Style 04</span>
+        <h3>Raw Concrete</h3>
+        <p>Bold blocks, hard shadows, unapologetic structure. For brands with something to say.</p>
+      </div></div>
+
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-editorial"><div class="mbar"><span class="mdot"></span><span class="mdot"></span><span class="mdot"></span></div><div class="mbody"></div></div>
+        <span class="tag">Style 05</span>
+        <h3>Editorial Ink</h3>
+        <p>Serif-led, magazine pacing, pages that turn in space. For writers and journals.</p>
+      </div></div>
+
+      <div class="tile"><div class="tile-inner">
+        <div class="mockup m-shop"><div class="mbar"><span class="mdot"></span><span class="mdot"></span><span class="mdot"></span></div><div class="mbody"><div></div><div></div><div></div><div></div><div></div><div></div></div></div>
+        <span class="tag">Style 06</span>
+        <h3>Shopfront 3D</h3>
+        <p>Product cards that lift and rotate toward the cursor. For e-commerce.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-tag">Process</span>
+      <h2 class="display">How a project moves.</h2>
+    </div>
+    <div class="process">
+      <div class="step"><span class="num">01</span><h4>DM your idea</h4><p>Message @codecraft.labs with what you're building and who it's for.</p></div>
+      <div class="step"><span class="num">02</span><h4>Pick a dimension</h4><p>Choose from the six styles above, or we blend a new one for you.</p></div>
+      <div class="step"><span class="num">03</span><h4>We build in 3D</h4><p>Every section is modeled, tilted, and animated — not a flat template.</p></div>
+      <div class="step"><span class="num">04</span><h4>Launch & shine</h4><p>You get a site nobody else has, ready to share.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta-panel">
+      <div id="ctacanvas"></div>
+      <div class="cta-inner">
+        <h2 class="display">Ready to see your site in 3D?</h2>
+        <p class="sub">Send a DM with your idea, your niche, and the style you liked most.</p>
+        <a class="handle" href="https://instagram.com/codecraft.labs" target="_blank" rel="noopener">@codecraft.labs</a><br>
+        <a class="btn-primary" href="https://instagram.com/codecraft.labs" target="_blank" rel="noopener">Open Instagram →</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  CodeCraft Labs — fully 3D websites, built to order · DM <span class="handle-small">@codecraft.labs</span> on Instagram
+</footer>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Tile tilt (stronger) ---------- */
+  if (!reduceMotion) {
+    document.querySelectorAll('.tile').forEach(tile => {
+      const inner = tile.querySelector('.tile-inner');
+      tile.addEventListener('mousemove', (e) => {
+        const r = tile.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        inner.style.transform = `rotateX(${-y * 26}deg) rotateY(${x * 26}deg)`;
+        inner.style.boxShadow = `${-x*30}px ${-y*30}px 50px rgba(124,92,255,0.18)`;
+      });
+      tile.addEventListener('mouseleave', () => {
+        inner.style.transform = 'rotateX(0deg) rotateY(0deg)';
+        inner.style.boxShadow = 'none';
+      });
+    });
+  }
+
+  /* ---------- Ambient particle backdrop ---------- */
+  const canvas = document.getElementById('bgcanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resizeBg(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+  const pcolors = ['#7c5cff', '#4ce0d2', '#ff6b5b'];
+  for (let i = 0; i < 50; i++) {
+    particles.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, z: Math.random()*1+0.2, r: Math.random()*1.6+0.4, c: pcolors[Math.floor(Math.random()*3)] });
+  }
+  function tickBg(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      p.y += 0.08 * p.z;
+      if (p.y > canvas.height) p.y = -10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * p.z * 2, 0, Math.PI*2);
+      ctx.fillStyle = p.c;
+      ctx.globalAlpha = 0.3 * p.z;
+      ctx.fill();
+    });
+    if (!reduceMotion) requestAnimationFrame(tickBg);
+  }
+  tickBg();
+
+  /* ---------- Real 3D hero scene (Three.js) ---------- */
+  if (window.THREE) {
+    const heroEl = document.getElementById('hero3d');
+    const heroScene = new THREE.Scene();
+    const heroCamera = new THREE.PerspectiveCamera(50, heroEl.clientWidth / heroEl.clientHeight, 0.1, 100);
+    heroCamera.position.z = 9;
+    const heroRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    heroRenderer.setSize(heroEl.clientWidth, heroEl.clientHeight);
+    heroEl.appendChild(heroRenderer.domElement);
+
+    heroScene.add(new THREE.AmbientLight(0x40406a, 1.4));
+    const heroLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    heroLight.position.set(4, 6, 8);
+    heroScene.add(heroLight);
+    const heroLight2 = new THREE.PointLight(0x7c5cff, 1.2, 20);
+    heroLight2.position.set(-5, -2, 4);
+    heroScene.add(heroLight2);
+
+    const heroColors = [0x7c5cff, 0x4ce0d2, 0xff6b5b];
+    const heroGroup = new THREE.Group();
+    const heroMeshes = [];
+    for (let i = 0; i < 7; i++) {
+      const geo = new THREE.BoxGeometry(2.1, 1.3, 0.1);
+      const mat = new THREE.MeshStandardMaterial({ color: heroColors[i % 3], metalness: 0.35, roughness: 0.35, transparent: true, opacity: 0.88 });
+      const mesh = new THREE.Mesh(geo, mat);
+      const edges = new THREE.EdgesGeometry(geo);
+      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+      mesh.add(line);
+      mesh.position.set((Math.random()-0.5)*7, (Math.random()-0.5)*4, (Math.random()-0.5)*5);
+      mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*0.3);
+      mesh.userData.spin = 0.002 + Math.random()*0.004;
+      heroGroup.add(mesh);
+      heroMeshes.push(mesh);
+    }
+    heroScene.add(heroGroup);
+
+    let hMouseX = 0, hMouseY = 0;
+    heroEl.addEventListener('mousemove', (e) => {
+      const r = heroEl.getBoundingClientRect();
+      hMouseX = (e.clientX - r.left) / r.width - 0.5;
+      hMouseY = (e.clientY - r.top) / r.height - 0.5;
+    });
+
+    function animateHero(){
+      heroMeshes.forEach(m => { m.rotation.x += m.userData.spin; m.rotation.y += m.userData.spin * 1.3; });
+      heroGroup.rotation.y += (hMouseX * 0.9 - heroGroup.rotation.y) * 0.04;
+      heroGroup.rotation.x += (-hMouseY * 0.6 - heroGroup.rotation.x) * 0.04;
+      heroRenderer.render(heroScene, heroCamera);
+      if (!reduceMotion) requestAnimationFrame(animateHero);
+      else heroRenderer.render(heroScene, heroCamera);
+    }
+    animateHero();
+
+    window.addEventListener('resize', () => {
+      heroCamera.aspect = heroEl.clientWidth / heroEl.clientHeight;
+      heroCamera.updateProjectionMatrix();
+      heroRenderer.setSize(heroEl.clientWidth, heroEl.clientHeight);
+    });
+
+    /* ---------- CTA accent scene ---------- */
+    const ctaEl = document.getElementById('ctacanvas');
+    const ctaScene = new THREE.Scene();
+    const ctaCamera = new THREE.PerspectiveCamera(50, ctaEl.clientWidth / ctaEl.clientHeight, 0.1, 100);
+    ctaCamera.position.z = 6;
+    const ctaRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    ctaRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    ctaRenderer.setSize(ctaEl.clientWidth, ctaEl.clientHeight);
+    ctaEl.appendChild(ctaRenderer.domElement);
+
+    ctaScene.add(new THREE.AmbientLight(0x505070, 1.3));
+    const ctaLight = new THREE.PointLight(0x4ce0d2, 1.4, 20);
+    ctaLight.position.set(3, 3, 5);
+    ctaScene.add(ctaLight);
+
+    const knotGeo = new THREE.TorusKnotGeometry(1.3, 0.32, 120, 16);
+    const knotMat = new THREE.MeshStandardMaterial({ color: 0x7c5cff, metalness: 0.5, roughness: 0.25, wireframe: false, transparent: true, opacity: 0.5 });
+    const knot = new THREE.Mesh(knotGeo, knotMat);
+    knot.position.x = -2.4;
+    ctaScene.add(knot);
+
+    const knotEdges = new THREE.WireframeGeometry(knotGeo);
+    const knotLines = new THREE.LineSegments(knotEdges, new THREE.LineBasicMaterial({ color: 0x4ce0d2, transparent: true, opacity: 0.25 }));
+    knotLines.position.copy(knot.position);
+    ctaScene.add(knotLines);
+
+    function animateCta(){
+      knot.rotation.x += 0.004;
+      knot.rotation.y += 0.006;
+      knotLines.rotation.x = knot.rotation.x;
+      knotLines.rotation.y = knot.rotation.y;
+      ctaRenderer.render(ctaScene, ctaCamera);
+      if (!reduceMotion) requestAnimationFrame(animateCta);
+      else ctaRenderer.render(ctaScene, ctaCamera);
+    }
+    animateCta();
+
+    window.addEventListener('resize', () => {
+      ctaCamera.aspect = ctaEl.clientWidth / ctaEl.clientHeight;
+      ctaCamera.updateProjectionMatrix();
+      ctaRenderer.setSize(ctaEl.clientWidth, ctaEl.clientHeight);
+    });
+  }
+</script>
+
+</body>
+</html>
